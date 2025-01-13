@@ -1,0 +1,37 @@
+http:
+  middlewares:
+    forward-auth:
+      forwardAuth:
+        address: "http://auth.test.localhost:8888/verify"
+        trustForwardHeader: true
+
+  routers:
+    auth-router:
+
+      entryPoints:
+        - web
+      rule: "Host(`auth.test.localhost`)"
+      service: auth-service
+
+    test-router:
+      entryPoints:
+        - web
+      rule: "Host(`service.test.localhost`)"
+      middlewares:
+        - forward-auth
+      service: test-service
+
+  services:
+
+    auth-service:
+      loadBalancer:
+        servers:
+          - url: "http://localhost:8000"
+        passHostHeader: true
+
+    test-service:
+      loadBalancer:
+        servers:
+          - url: "http://example.org"
+        passHostHeader: false
+
