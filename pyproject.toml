@@ -1,0 +1,32 @@
+[build-system]
+requires = ["hatchling", "hatch-vcs"]
+build-backend = "hatchling.build"
+
+[project]
+name = "cryptauth"
+description = "A lightweight forward-auth service with SIWE integration."
+readme = "README.md"
+license = "AGPL-3.0"
+authors = [{ name = "Hugo Herter", email = "git@hugoherter.com" }]
+keywords = ["forward-auth", "Ethereum", "SIWE", "Metamask", "FastAPI", "Traefik"]
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "Framework :: FastAPI",
+]
+requires-python = ">=3.11"
+dependencies = [
+    "fastapi",
+    "pydantic",
+    "siwe",
+    "uvicorn",
+]
+dynamic = ["version"]
+
+[tool.hatch.version]
+source = "vcs"
+
+[tool.hatch.build.targets.sdist]
+include = ["src", "LICENSE", "README.md"]
+
+[tool.hatch.build.targets.wheel]
+include = ["src", "LICENSE", "README.md"]

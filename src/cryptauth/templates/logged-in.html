@@ -1,0 +1,19 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <title>Logged In</title>
+    <link rel="stylesheet" href="/static/styles.css">
+</head>
+<body>
+    <h1>Logged In</h1>
+    <div>
+        <p>You are logged in.</p>
+        {% if unauthorized %}
+            <p style="color: red">
+                However, your address is not authorized to access this page.
+            </p>
+        {% endif %}
+        <a href="/logout">Logout</a>
+    </div>
+</body>
+</html>

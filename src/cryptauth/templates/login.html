@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8" />
+  <title>Sign-In with Ethereum (SIWE)</title>
+  <link rel="stylesheet" href="/static/styles.css">
+
+</head>
+<body>
+  <h1>Sign-In with Ethereum</h1>
+  <div>
+    <button type="button" id="siwe">Sign-In with Ethereum</button>
+    <p class="alert"><span id="siweResult"></span></p>
+  </div>
+
+  <script>
+    const nonce = "{{ nonce }}";
+  </script>
+  <script src="/static/ethers.umd.min.js"></script>
+  <script src="/static/index.js"></script>
+</body>
+</html>
