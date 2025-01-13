@@ -3,7 +3,7 @@ import sqlite3
 from base64 import b32encode
 from datetime import datetime
 from pathlib import Path
-from typing import Optional, Iterator
+from typing import Iterator, Optional
 
 
 def load_authorized_addresses(path: Path) -> Iterator[str]:

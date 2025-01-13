@@ -1,29 +1,34 @@
+import logging
 from datetime import datetime, timedelta
 from pathlib import Path
 from typing import Annotated
+from urllib.parse import urlparse
 
-from fastapi import FastAPI, Request, HTTPException
+from fastapi import FastAPI, HTTPException, Request
 from fastapi.params import Cookie, Depends
-from fastapi.responses import PlainTextResponse, HTMLResponse, RedirectResponse
+from fastapi.responses import HTMLResponse, PlainTextResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from pydantic import BaseModel
+from starlette.responses import Response
 
 from cryptauth import config
-from cryptauth.crypto import siwe_signature_is_valid, parse_siwe_message
+from cryptauth.crypto import parse_siwe_message, siwe_signature_is_valid
 from cryptauth.database import (
+    address_is_authorized,
+    associate_session_with_address,
+    create_session,
+    get_session_nonce,
+    invalidate_session,
+    load_authorized_addresses,
+    query_metrics,
+    session_is_authenticated,
+    session_is_authorized,
     session_is_valid,
     setup_database,
-    invalidate_session,
-    create_session,
-    associate_session_with_address,
-    session_is_authenticated,
-    get_session_nonce,
-    load_authorized_addresses,
-    address_is_authorized,
-    session_is_authorized,
-    query_metrics,
 )
+
+logger = logging.getLogger(__name__)
 
 app = FastAPI()
 app.mount(
@@ -38,24 +43,35 @@ templates = Jinja2Templates(directory=Path(__file__).parent / "templates")
 
 
 def ensure_exact_hostname(request: Request) -> None:
-    if request.url.hostname != config.HOSTNAME:
+    if request.url.hostname not in config.HOSTNAMES:
         raise HTTPException(
             status_code=503,
-            detail=f"Invalid hostname: {request.url.hostname}, expected: {config.HOSTNAME}",
+            detail=f"Invalid hostname: {request.url.hostname}, expected in: {config.HOSTNAMES}",
         )
 
 
-@app.get(
-    "/", response_class=HTMLResponse, dependencies=[Depends(ensure_exact_hostname)]
-)
+@app.get("/", dependencies=[Depends(ensure_exact_hostname)])
 async def login_form(
     request: Request, session_id: Annotated[str | None, Cookie()] = None
-) -> HTMLResponse:
+) -> Response:
     now = datetime.now()
 
     if address := session_is_authenticated(db, session_id, now):
         authorized = address_is_authorized(db, address)
-        print(authorized)
+
+        # If a `next` page is specified in query params, redirect to that URL
+        next_url = request.query_params.get("next")
+        if next_url:
+            try:
+                # Ensure the URL is valid
+                parsed = urlparse(next_url)
+                # Only redirect to HTTP(S) URLs
+                if parsed.scheme in {"http", "https"}:
+                    return RedirectResponse(url=next_url)
+            except ValueError:
+                logger.debug(f"Invalid URL: {next_url}")
+
+        # Else display the logged-in page
         return templates.TemplateResponse(
             "logged-in.html", {"request": request, "unauthorized": not authorized}
         )
@@ -79,8 +95,9 @@ async def login_form(
             key="session_id",
             value=new_session_id,
             httponly=True,
-            samesite="strict",
-            secure=False,  # FIXME
+            samesite="lax",
+            secure=config.COOKIES_SECURE,
+            domain=config.COOKIES_HOSTNAME,
         )
         return response
 
@@ -108,9 +125,9 @@ async def login(
 
     signed_domain = siwe_message.domain.split(":")[0]  # Discard port number
 
-    if signed_domain != config.HOSTNAME:
+    if signed_domain not in config.HOSTNAMES:
         return HTMLResponse(
-            f"Invalid domain '{siwe_message.domain}' is not '{config.HOSTNAME}'",
+            f"Invalid domain '{siwe_message.domain}' is not in '{config.HOSTNAMES}'",
             status_code=403,
         )
 
@@ -140,14 +157,25 @@ async def logout(
     return RedirectResponse(url="/")
 
 
-@app.post("/auth")
+@app.get("/verify")
 async def auth(
     request: Request, session_id: Annotated[str | None, Cookie()] = None
-) -> dict[str, bool]:
+) -> Response:
+    x_forwarded_proto = request.headers.get("x-forwarded-proto")
+    x_forwarded_host = request.headers.get("x-forwarded-host")
+    x_forwarded_uri = request.headers.get("x-forwarded-uri")
+    target_url = f"{x_forwarded_proto}://{x_forwarded_host}{x_forwarded_uri}"
+
     if session_is_authorized(db, session_id, datetime.now()):
-        return {"authorized": True}
+        return PlainTextResponse(
+            status_code=200,
+            content="You are authorized to access this resource",
+        )
     else:
-        return {"authorized": False}
+        # Unauthorized, redirect to the auth service
+        return RedirectResponse(
+            url=f"http://auth.test.localhost:8888/?next={target_url}", status_code=302
+        )
 
 
 @app.get("/metrics")
