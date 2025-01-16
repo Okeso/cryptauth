@@ -6,7 +6,7 @@ let
     clang = pkgs.clang;
     buildPythonPackage = pkgs.python312Packages.buildPythonPackage;
     python = pkgs.python312Packages.python;
-    pythonOlder = null;  # or pkgs.python311Packages.python if needed
+    pythonOlder = null;
     pyyaml = pkgs.python312Packages.pyyaml;
     blst = pkgs.blst;
     setuptools = pkgs.python312Packages.setuptools;
@@ -20,10 +20,47 @@ let
       inherit pname version;
       sha256 = "sha256-LT7UkMZMDihe01OE1KWI87HokwYgsJt2YChRCCeE408=";
     };
-    nativeBuildInputs = [
-      pkgs.python312Packages.setuptools-scm
-    ];
+    nativeBuildInputs = [ pkgs.python312Packages.setuptools-scm ];
     pythonImportsCheck = [ "abnf" ];
+  };
+
+  ethTyping = pkgs.python312Packages.buildPythonPackage rec {
+    pname = "eth-typing";
+    version = "5.1.0";
+    src = pkgs.fetchPypi {
+      inherit version;
+      pname = builtins.replaceStrings ["-"] ["_"] pname;
+      sha256 = "sha256-hYHyEu5iUqqihTd6d2IPbl9uFqw/FExh8Jj6/UeWexo=";
+    };
+    propagatedBuildInputs = [ pkgs.python312Packages.typing-extensions ];
+    pythonImportsCheck = [ "eth_typing" ];
+  };
+
+  ethHash = pkgs.python312Packages.buildPythonPackage rec {
+    pname = "eth-hash";
+    version = "0.7.1";
+    src = pkgs.fetchPypi {
+      inherit version;
+      pname = builtins.replaceStrings ["-"] ["_"] pname;
+      sha256 = "sha256-0kEaQDoLCmLoJHtBF5MtkA/7TIxksV+SYgVHylzka+U=";
+    };
+    pythonImportsCheck = [ "eth_hash" ];
+  };
+
+  ethUtils = pkgs.python312Packages.buildPythonPackage rec {
+    pname = "eth-utils";
+    version = "5.1.0";
+    src = pkgs.fetchPypi {
+      inherit version;
+      pname = builtins.replaceStrings ["-"] ["_"] pname;
+      sha256 = "sha256-hMYxS5zx/NUmEHRku/SH4/hwl6LnUzYNXtMZ99QuPyA=";
+    };
+    pythonImportsCheck = [ "eth_utils" ];
+    propagatedBuildInputs = [
+      ethTyping
+      ethHash
+      pkgs.python312Packages.toolz
+    ];
   };
 
   ethKeys = pkgs.python312Packages.buildPythonPackage rec {
@@ -35,9 +72,7 @@ let
       sha256 = "sha256-pD4mPLyr/WL6dpFo78bCex9WAwQOTeIruE0SVn5P2WI=";
     };
     pythonImportsCheck = [ "eth_keys" ];
-    propagatedBuildInputs = [
-     ethUtils
-    ];
+    propagatedBuildInputs = [ ethUtils ];
   };
 
   rlp = pkgs.python312Packages.buildPythonPackage rec {
@@ -48,9 +83,7 @@ let
       sha256 = "sha256-vO+xEBPfrfiQJkIzeSO9DHhtyKJ8tMIdpuFU5Shp7LE=";
     };
     pythonImportsCheck = [ "rlp" ];
-    propagatedBuildInputs = [
-      ethUtils
-    ];
+    propagatedBuildInputs = [ ethUtils ];
   };
 
   ethRlp = pkgs.python312Packages.buildPythonPackage rec {
@@ -67,7 +100,7 @@ let
       pkgs.python312Packages.hexbytes
     ];
   };
-  
+
   ethKeyfile = pkgs.python312Packages.buildPythonPackage rec {
     pname = "eth-keyfile";
     version = "0.8.1";
@@ -83,19 +116,6 @@ let
     ];
   };
 
-  ethHash = pkgs.python312Packages.buildPythonPackage rec {
-    pname = "eth-hash";
-    version = "0.7.1";
-    src = pkgs.fetchPypi {
-      inherit version;
-      pname = builtins.replaceStrings ["-"] ["_"] pname;
-      sha256 = "sha256-0kEaQDoLCmLoJHtBF5MtkA/7TIxksV+SYgVHylzka+U=";
-    };
-    pythonImportsCheck = [ "eth_hash" ];
-    propagatedBuildInputs = [
-    ];
-  };
-  
   ethAbi = pkgs.python312Packages.buildPythonPackage rec {
     pname = "eth-abi";
     version = "5.2.0";
@@ -130,36 +150,6 @@ let
       pkgs.python312Packages.hexbytes
     ];
     pythonImportsCheck = [ "eth_account" ];
-  };
-
-  ethTyping = pkgs.python312Packages.buildPythonPackage rec {
-    pname = "eth-typing";
-    version = "5.1.0";
-    src = pkgs.fetchPypi {
-      inherit version;
-      pname = builtins.replaceStrings ["-"] ["_"] pname;
-      sha256 = "sha256-hYHyEu5iUqqihTd6d2IPbl9uFqw/FExh8Jj6/UeWexo=";
-    };
-    propagatedBuildInputs = [
-      pkgs.python312Packages.typing-extensions
-    ];
-    pythonImportsCheck = [ "eth_typing" ];
-  };
-
-  ethUtils = pkgs.python312Packages.buildPythonPackage rec {
-    pname = "eth-utils";
-    version = "5.1.0";
-    src = pkgs.fetchPypi {
-      inherit version;
-      pname = builtins.replaceStrings ["-"] ["_"] pname;
-      sha256 = "sha256-hMYxS5zx/NUmEHRku/SH4/hwl6LnUzYNXtMZ99QuPyA=";
-    };
-    pythonImportsCheck = [ "eth_utils" ];
-    propagatedBuildInputs = [
-      ethTyping
-      ethHash
-      pkgs.python312Packages.toolz
-    ];
   };
 
   web3 = pkgs.python312Packages.buildPythonPackage rec {
@@ -199,14 +189,33 @@ let
     nativeBuildInputs = [ pkgs.python312Packages.poetry-core ];
     pythonImportsCheck = [ "siwe" ];
   };
-
-  pythonEnv = pkgs.python312.withPackages (ps: with ps; [
-    fastapi
-    pydantic
-    siwe
-    uvicorn
-    jinja2
-  ]);
 in
-  pythonEnv
-
+pkgs.python312Packages.buildPythonPackage {
+  pname = "cryptauth";
+  version = "0.1.0";
+  src = ./.;
+  pyproject = true;
+  buildInputs = [
+    pkgs.python312Packages.hatchling
+    pkgs.python312Packages.hatch-vcs
+  ];
+  propagatedBuildInputs = [
+    pkgs.python312Packages.fastapi
+    pkgs.python312Packages.pydantic
+    pkgs.python312Packages.uvicorn
+    pkgs.python312Packages.jinja2
+    siwe
+  ];
+  pythonImportsCheck = [ "cryptauth" ];
+  doInstallCheck = true;
+  # phases = [ "installPhase" ];
+  # installPhase = ''
+  #   mkdir -p $out
+  # '';
+  meta = {
+    description = "An authentication service for Traefik using Sign-in with Ethereum.";
+    homepage = "https://example.org";
+    license = pkgs.lib.licenses.agpl3Only;
+    maintainers = [ ];
+  };
+}

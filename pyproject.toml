@@ -26,8 +26,17 @@ dynamic = ["version"]
 [tool.hatch.version]
 source = "vcs"
 
+
+[tool.hatch.build]
+packages = ["src/cryptauth"]
+include = ["src", "LICENSE", "README.md"]
+
+
 [tool.hatch.build.targets.sdist]
 include = ["src", "LICENSE", "README.md"]
 
 [tool.hatch.build.targets.wheel]
 include = ["src", "LICENSE", "README.md"]
+
+# [project.scripts]
+# cryptauth = "uvicorn crytpauth.views:app"
