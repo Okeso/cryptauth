@@ -19,6 +19,7 @@ dependencies = [
     "pydantic",
     "siwe",
     "uvicorn",
+    "jinja2",
 ]
 dynamic = ["version"]
 
